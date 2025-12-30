@@ -294,23 +294,18 @@ async function scheduleMessage({
 
       return messageId;
     } else {
-      logger.error(
-        "QStash client not available, scheduled action cannot be executed",
+      // QStash not available - anti-entropy will pick up this action
+      logger.warn(
+        "QStash client not available, action will be executed by anti-entropy",
         {
           scheduledActionId: payload.scheduledActionId,
+          notBefore,
+          delayInMinutes,
         },
       );
 
-      await prisma.scheduledAction.update({
-        where: { id: payload.scheduledActionId },
-        data: {
-          schedulingStatus: "FAILED" as const,
-        },
-      });
-
-      throw new Error(
-        "QStash client not available - scheduled action cannot be executed",
-      );
+      // leave schedulingStatus as PENDING so anti-entropy can find it
+      return undefined;
     }
   } catch (error) {
     logger.error("Failed to schedule with QStash", {

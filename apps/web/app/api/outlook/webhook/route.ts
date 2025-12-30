@@ -7,6 +7,7 @@ import { env } from "@/env";
 import { webhookBodySchema } from "@/app/api/outlook/webhook/types";
 import { handleWebhookError } from "@/utils/webhook/error-handler";
 import { getWebhookEmailAccount } from "@/utils/webhook/validate-webhook-account";
+import prisma from "@/utils/prisma";
 
 export const maxDuration = 300;
 
@@ -83,6 +84,15 @@ async function processNotificationsAsync(
     logger.info("Processing notification", {
       changeType: notification.changeType,
     });
+
+    await prisma.emailAccount
+      .update({
+        where: { watchEmailsSubscriptionId: subscriptionId },
+        data: { lastWebhookReceivedAt: new Date() },
+      })
+      .catch((error) => {
+        logger.warn("Failed to update lastWebhookReceivedAt", { error });
+      });
 
     try {
       await processHistoryForUser({
