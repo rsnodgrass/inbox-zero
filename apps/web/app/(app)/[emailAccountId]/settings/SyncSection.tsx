@@ -23,12 +23,7 @@ export function SyncSection() {
       const result: SyncResponse = await response.json();
       setLastResult(result);
 
-      if (result.rateLimited) {
-        toastError({
-          title: "Rate limited",
-          description: "Please wait a few minutes before syncing again.",
-        });
-      } else if (result.success) {
+      if (result.success) {
         if (result.messagesProcessed > 0) {
           toastSuccess({
             description: `Synced ${result.messagesProcessed} new email${result.messagesProcessed === 1 ? "" : "s"}`,
@@ -73,7 +68,7 @@ export function SyncSection() {
           />
           {isLoading ? "Syncing..." : "Sync Now"}
         </Button>
-        {lastResult && !lastResult.rateLimited && (
+        {lastResult && (
           <p className="text-sm text-muted-foreground">
             {lastResult.success
               ? lastResult.messagesProcessed > 0
