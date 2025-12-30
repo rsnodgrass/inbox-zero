@@ -9,6 +9,8 @@ export interface AntiEntropyResult {
 }
 
 export interface AntiEntropyMetrics {
+  totalAccountsFound: number;
+  accountsSkipped: number;
   totalAccountsPolled: number;
   googleAccounts: number;
   microsoftAccounts: number;

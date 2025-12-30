@@ -5,9 +5,30 @@ import { getPremiumUserFilter } from "@/utils/premium";
 import prisma from "@/utils/prisma";
 import type { Logger } from "@/utils/logger";
 import { sleep } from "@/utils/sleep";
+import { subMinutes } from "date-fns";
 
 const BATCH_SIZE = 10;
 const BATCH_DELAY_MS = 1000;
+const MAX_ACCOUNTS_PER_RUN = 100;
+const RECENT_WEBHOOK_MINUTES = 30;
+
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+function hasRecentWebhook(
+  lastWebhookReceivedAt: Date | null,
+  thresholdMinutes: number,
+): boolean {
+  if (!lastWebhookReceivedAt) return false;
+  const threshold = subMinutes(new Date(), thresholdMinutes);
+  return lastWebhookReceivedAt > threshold;
+}
 
 export async function getAccountsToPolice(
   logger: Logger,
@@ -65,6 +86,7 @@ export async function getAccountsToPolice(
   });
 
   // map to AntiEntropyAccountData, adding lastWebhookReceivedAt as null for now
+  // (will be populated after Prisma migration is run)
   return accounts.map((account) => ({
     ...account,
     lastWebhookReceivedAt: null,
@@ -80,6 +102,8 @@ export async function runAntiEntropy(
   log.info("Starting anti-entropy run");
 
   const metrics: AntiEntropyMetrics = {
+    totalAccountsFound: 0,
+    accountsSkipped: 0,
     totalAccountsPolled: 0,
     googleAccounts: 0,
     microsoftAccounts: 0,
@@ -96,7 +120,33 @@ export async function runAntiEntropy(
     metrics.errors += scheduledResult.failed;
   }
 
-  const accounts = await getAccountsToPolice(log);
+  const allAccounts = await getAccountsToPolice(log);
+  metrics.totalAccountsFound = allAccounts.length;
+
+  // skip accounts with recent webhooks (webhooks are working)
+  const accountsNeedingPolling = allAccounts.filter(
+    (account) =>
+      !hasRecentWebhook(account.lastWebhookReceivedAt, RECENT_WEBHOOK_MINUTES),
+  );
+  metrics.accountsSkipped = allAccounts.length - accountsNeedingPolling.length;
+
+  if (metrics.accountsSkipped > 0) {
+    log.info("Skipped accounts with recent webhooks", {
+      skipped: metrics.accountsSkipped,
+      remaining: accountsNeedingPolling.length,
+    });
+  }
+
+  // randomize and limit to max accounts per run
+  const shuffledAccounts = shuffleArray(accountsNeedingPolling);
+  const accounts = shuffledAccounts.slice(0, MAX_ACCOUNTS_PER_RUN);
+
+  if (accountsNeedingPolling.length > MAX_ACCOUNTS_PER_RUN) {
+    log.info("Limited accounts to max per run", {
+      total: accountsNeedingPolling.length,
+      processing: accounts.length,
+    });
+  }
 
   for (let i = 0; i < accounts.length; i += BATCH_SIZE) {
     const batch = accounts.slice(i, i + BATCH_SIZE);
