@@ -1,13 +1,13 @@
 #!/bin/bash
 # publish-ghcr.sh - Publish inbox-zero to GitHub Container Registry
 #
-# Builds and pushes a multi-platform Docker image to your personal GHCR.
+# Builds and pushes a Docker image (amd64) to your personal GHCR.
 # Useful for running your own inbox-zero fork in Docker/Kubernetes without
 # depending on the upstream elie222/inbox-zero image.
 #
 # Prerequisites:
 #   - gh CLI authenticated: gh auth login
-#   - Docker buildx for multi-platform: docker buildx create --use --name multiplatform
+#   - Docker with buildx support
 #
 # Usage:
 #   ./docker/scripts/publish-ghcr.sh          # tag with git SHA
@@ -36,9 +36,9 @@ echo "Building ${FULL_IMAGE}:${TAG}"
 echo "Logging into GHCR..."
 gh auth token | docker login ghcr.io -u "${GITHUB_USERNAME}" --password-stdin
 
-# Build multi-platform and push
+# Build and push (amd64 only - arm64 has pnpm/next resolution issues)
 docker buildx build \
-  --platform linux/amd64,linux/arm64 \
+  --platform linux/amd64 \
   --file "${DOCKERFILE}" \
   --tag "${FULL_IMAGE}:${TAG}" \
   --tag "${FULL_IMAGE}:latest" \
