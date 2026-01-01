@@ -38,6 +38,7 @@ const getUserPrompt = ({
   calendarAvailability,
   writingStyle,
   mcpContext,
+  recipientProfileContext,
 }: {
   messages: (EmailForLLM & { to: string })[];
   emailAccount: EmailAccountWithAI;
@@ -47,6 +48,7 @@ const getUserPrompt = ({
   calendarAvailability: CalendarAvailabilityContext | null;
   writingStyle: string | null;
   mcpContext: string | null;
+  recipientProfileContext: string | null;
 }) => {
   const userAbout = emailAccount.about
     ? `Context about the user:
@@ -144,11 +146,14 @@ ${mcpContext}
 `
     : "";
 
+  const recipientStyleContext = recipientProfileContext || "";
+
   return `${userAbout}
 ${relevantKnowledge}
 ${historicalContext}
 ${precedentHistoryContext}
 ${writingStylePrompt}
+${recipientStyleContext}
 ${calendarContext}
 ${bookingLinkContext}
 ${mcpToolsContext}
@@ -178,6 +183,7 @@ export async function aiDraftWithKnowledge({
   calendarAvailability,
   writingStyle,
   mcpContext,
+  recipientProfileContext,
 }: {
   messages: (EmailForLLM & { to: string })[];
   emailAccount: EmailAccountWithAI;
@@ -187,6 +193,7 @@ export async function aiDraftWithKnowledge({
   calendarAvailability: CalendarAvailabilityContext | null;
   writingStyle: string | null;
   mcpContext: string | null;
+  recipientProfileContext: string | null;
 }) {
   try {
     logger.info("Drafting email with knowledge base", {
@@ -211,6 +218,7 @@ export async function aiDraftWithKnowledge({
       calendarAvailability,
       writingStyle,
       mcpContext,
+      recipientProfileContext,
     });
 
     const modelOptions = getModelForOperation(emailAccount.user, "reply.draft");
