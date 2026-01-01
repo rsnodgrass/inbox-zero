@@ -207,6 +207,10 @@ export const env = createEnv({
     NEXT_PUBLIC_INTEGRATIONS_ENABLED: z.coerce.boolean().optional(),
     NEXT_PUBLIC_CLEANER_ENABLED: z.coerce.boolean().optional(),
     NEXT_PUBLIC_IS_RESEND_CONFIGURED: z.coerce.boolean().optional(),
+    NEXT_PUBLIC_COMMAND_PALETTE_ENABLED: z.coerce
+      .boolean()
+      .optional()
+      .default(true),
   },
   // For Next.js >= 13.4.4, you only need to destructure client variables:
   experimental__runtimeEnv: {
@@ -271,5 +275,7 @@ export const env = createEnv({
     NEXT_PUBLIC_CLEANER_ENABLED: process.env.NEXT_PUBLIC_CLEANER_ENABLED,
     NEXT_PUBLIC_IS_RESEND_CONFIGURED:
       process.env.NEXT_PUBLIC_IS_RESEND_CONFIGURED,
+    NEXT_PUBLIC_COMMAND_PALETTE_ENABLED:
+      process.env.NEXT_PUBLIC_COMMAND_PALETTE_ENABLED,
   },
 });

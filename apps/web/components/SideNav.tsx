@@ -23,6 +23,7 @@ import {
   PenIcon,
   PersonStandingIcon,
   RatioIcon,
+  SearchIcon,
   SendIcon,
   SettingsIcon,
   SparklesIcon,
@@ -53,9 +54,11 @@ import { useSplitLabels } from "@/hooks/useLabels";
 import { LoadingContent } from "@/components/LoadingContent";
 import {
   useCleanerEnabled,
+  useCommandPaletteEnabled,
   useIntegrationsEnabled,
   useMeetingBriefsEnabled,
 } from "@/hooks/useFeatureFlags";
+import { COMMAND_PALETTE_EVENT } from "@/components/CommandK";
 import { ClientOnly } from "@/components/ClientOnly";
 import { AccountSwitcher } from "@/components/AccountSwitcher";
 import { useAccount } from "@/providers/EmailAccountProvider";
@@ -212,6 +215,7 @@ export function SideNav({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const currentEmailAccountId = emailAccount?.id || emailAccountId;
   const path = usePathname();
   const showMailNav = path.includes("/mail") || path.includes("/compose");
+  const showCommandPalette = useCommandPaletteEnabled();
 
   const visibleBottomLinks = useMemo(
     () =>
@@ -269,6 +273,18 @@ export function SideNav({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <ClientOnly>
             <ReferralDialog />
           </ClientOnly>
+        )}
+
+        {showCommandPalette && (
+          <SidebarMenuButton
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent(COMMAND_PALETTE_EVENT));
+            }}
+          >
+            <SearchIcon className="size-4" />
+            <span className="font-semibold">Search</span>
+            <CommandShortcut className="ml-auto">⌘K</CommandShortcut>
+          </SidebarMenuButton>
         )}
 
         <SidebarMenuButton asChild>

@@ -312,6 +312,7 @@ export function Rules({
                         accept=".json"
                         onChange={importRules}
                         className="hidden"
+                        aria-label="Import rules from JSON file"
                       />
                       <div className="my-2">
                         <Button
