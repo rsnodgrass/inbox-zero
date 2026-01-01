@@ -1,0 +1,281 @@
+================================================================================
+INBOX ZERO - FEATURE IMPROVEMENTS
+================================================================================
+
+
+## FEATURE 1: Cross-Context Awareness (Meeting-Aware Drafts)
+--------------------------------------------------------------------------------
+STATUS: Not Started
+PRIORITY: High
+EFFORT: Medium
+
+DESCRIPTION:
+Use Meeting Briefs context to inform email draft generation. When drafting a
+reply to someone you have an upcoming meeting with, include that context.
+
+Example: "I see we have a call scheduled for Thursday. Looking forward to
+discussing the Q1 roadmap then."
+
+EXISTING INFRASTRUCTURE:
+- Meeting Briefs: apps/web/utils/meeting-briefs/gather-context.ts
+  - gatherContextForEvent() already fetches email threads with participants
+  - researchGuestWithPerplexity() provides guest research from web
+- Draft Generation: apps/web/utils/ai/reply/draft-with-knowledge.ts
+  - aiDraftWithKnowledge() is the main draft function
+  - Already receives user context, knowledge base, calendar info
+
+GAP:
+Meeting context exists but isn't connected to draft generation.
+
+IMPLEMENTATION STEPS:
+[ ] 1. Create function to check if recipient has upcoming meeting
+      File: apps/web/utils/meeting-briefs/recipient-context.ts
+
+      async function getUpcomingMeetingContext(
+        emailAccountId: string,
+        recipientEmail: string
+      ): Promise<MeetingContext | null>
+
+      Query: MeetingBriefing + Calendar events where:
+        - guestEmail matches recipient
+        - eventStartTime > now AND < now + 7 days
+
+[ ] 2. Extend aiDraftWithKnowledge to accept meeting context parameter
+      File: apps/web/utils/ai/reply/draft-with-knowledge.ts
+
+      Add to function signature:
+      meetingContext?: {
+        eventTitle: string;
+        eventTime: Date;
+        guestResearch?: string;
+        previousMeetingNotes?: string;
+      }
+
+[ ] 3. Update system prompt to include meeting awareness
+      Add to prompt when meeting context exists:
+
+      "You have an upcoming meeting with this person:
+       - Event: {eventTitle}
+       - Date: {formattedDate}
+       - Context: {guestResearch}
+
+       Consider referencing this meeting if relevant to the email topic."
+
+[ ] 4. Call recipient context check before draft generation
+      File: apps/web/utils/ai/reply/index.ts (or wherever drafts triggered)
+
+      Before calling aiDraftWithKnowledge:
+      const meetingContext = await getUpcomingMeetingContext(
+        emailAccountId,
+        recipientEmail
+      );
+
+[ ] 5. Add tests for meeting-aware draft generation
+
+KEY FILES TO MODIFY:
+- apps/web/utils/meeting-briefs/recipient-context.ts (new)
+- apps/web/utils/ai/reply/draft-with-knowledge.ts
+- apps/web/utils/meeting-briefs/gather-context.ts (reuse functions)
+
+
+## FEATURE 2: Recipient-Adaptive Tone
+--------------------------------------------------------------------------------
+STATUS: Not Started
+PRIORITY: High
+EFFORT: Medium-High
+
+DESCRIPTION:
+Track communication patterns per recipient and adapt draft tone accordingly.
+More formal for executives/external partners, casual for close colleagues.
+
+Example: Draft to CEO uses "Dear Mr. Smith" while draft to teammate uses "Hey!"
+
+EXISTING INFRASTRUCTURE:
+- User writing style: apps/web/utils/ai/knowledge/writing-style.ts
+  - aiAnalyzeWritingStyle() analyzes formality, length, greetings
+  - Stores result in EmailAccount.writingStyle
+- Sender categorization: apps/web/utils/ai/categorize-sender/
+  - Categories senders but doesn't track tone/formality
+- Newsletter model: tracks sender email but not communication patterns
+
+GAP:
+Currently NO per-recipient profiling. Only the user's own writing style
+is tracked. We don't know how the user typically communicates with
+each specific recipient.
+
+IMPLEMENTATION STEPS:
+[ ] 1. Add RecipientProfile model to Prisma schema
+      File: apps/web/prisma/schema.prisma
+
+      model RecipientProfile {
+        id                    String   @id @default(cuid())
+        emailAccountId        String
+        emailAccount          EmailAccount @relation(...)
+        recipientEmail        String
+
+        // Detected patterns
+        detectedFormality     String?  // formal | neutral | casual
+        typicalGreeting       String?  // "Hi", "Dear", "Hey", etc.
+        typicalSignoff        String?  // "Best", "Thanks", "Cheers"
+        averageResponseLength Int?     // words
+        communicationFrequency Int?    // emails per month
+
+        // Metadata
+        sampleEmailIds        String[] // IDs used for analysis
+        lastAnalyzedAt        DateTime?
+        createdAt             DateTime @default(now())
+        updatedAt             DateTime @updatedAt
+
+        @@unique([emailAccountId, recipientEmail])
+      }
+
+[ ] 2. Create recipient analysis function
+      File: apps/web/utils/ai/knowledge/recipient-profile.ts
+
+      async function aiAnalyzeRecipientCommunication(
+        sentEmails: Email[]  // Emails user sent TO this recipient
+      ): Promise<RecipientProfile>
+
+      Prompt AI to analyze:
+      - Formality level used with this person
+      - Typical greetings and sign-offs
+      - Response length patterns
+      - Communication frequency
+
+[ ] 3. Trigger analysis when sending emails
+      File: apps/web/app/api/google/messages/send/route.ts
+
+      After successful send:
+      - Check if RecipientProfile exists for recipient
+      - If not, or if stale (>30 days), queue profile update
+      - Use QStash to avoid blocking send
+
+[ ] 4. Update draft generation to use recipient profile
+      File: apps/web/utils/ai/reply/draft-with-knowledge.ts
+
+      Before generating draft:
+      const recipientProfile = await getRecipientProfile(
+        emailAccountId,
+        recipientEmail
+      );
+
+      Include in system prompt:
+      "When writing to this recipient, match their established pattern:
+       - Formality: {formal/casual}
+       - Typical greeting: {greeting}
+       - Typical length: {short/medium/long}"
+
+[ ] 5. Add UI to view/override recipient profiles (optional)
+      Allow users to manually set formality for specific recipients
+
+[ ] 6. Background job to bootstrap profiles from existing sent emails
+      One-time job to analyze historical sent emails
+
+KEY FILES TO MODIFY:
+- apps/web/prisma/schema.prisma (new model)
+- apps/web/utils/ai/knowledge/recipient-profile.ts (new file)
+- apps/web/utils/ai/reply/draft-with-knowledge.ts
+- apps/web/app/api/google/messages/send/route.ts
+
+
+## FEATURE 3: Pre-Draft All Replies
+--------------------------------------------------------------------------------
+STATUS: Not Started
+PRIORITY: Very High (major time-saver)
+EFFORT: Medium-High
+
+DESCRIPTION:
+Automatically generate draft replies for ALL emails marked as "needs reply",
+not just those matching automation rules. Drafts are created directly in the
+user's Gmail or Outlook drafts folder - they see them in their normal email
+client, not in Inbox Zero.
+
+Current: AI drafts replies only when a rule triggers the draft action
+Proposed: AI pre-drafts replies for ALL emails detected as "needs reply"
+
+USER FLOW:
+1. Email arrives in Gmail/Outlook
+2. Inbox Zero detects it needs a reply (ThreadTracker)
+3. Background job generates draft using AI
+4. Draft is created in user's Gmail/Outlook drafts folder
+5. User opens Gmail/Outlook, sees draft ready to send/edit
+
+EXISTING INFRASTRUCTURE:
+- ThreadTracker: already identifies threads needing reply
+- Draft generation: apps/web/utils/ai/reply/draft-with-knowledge.ts
+- Rule-based drafts: apps/web/utils/ai/choose-rule/run-rules.ts
+- Writing style: apps/web/utils/ai/knowledge/writing-style.ts
+- Gmail API: Can create drafts via API
+- Outlook API: Can create drafts via API
+
+IMPLEMENTATION STEPS:
+[ ] 1. Create background job for draft generation
+      File: apps/web/app/api/pre-drafts/generate/route.ts
+
+      Triggered by: QStash schedule or webhook on new email
+
+      Process:
+      1. Query ThreadTracker where status = 'NEEDS_REPLY'
+      2. Filter out threads that already have a draft in Gmail/Outlook
+      3. Generate drafts for top N (limit for cost control)
+      4. Create draft in user's email provider via API
+
+      Priority: Most recent emails first
+
+[ ] 2. Add Gmail draft creation function
+      File: apps/web/utils/gmail/draft.ts
+
+      async function createGmailDraft(
+        auth: OAuth2Client,
+        threadId: string,
+        replyTo: string,
+        subject: string,
+        body: string
+      ): Promise<string>  // Returns draft ID
+
+      Use Gmail API: gmail.users.drafts.create()
+
+[ ] 3. Add Outlook draft creation function
+      File: apps/web/utils/outlook/draft.ts
+
+      Similar to Gmail, use Microsoft Graph API
+
+[ ] 4. Generate drafts using existing aiDraftWithKnowledge
+      Reuse existing draft generation logic
+      Add batching to control AI costs:
+      - Max X drafts per user per day
+      - Rate limit API calls
+
+[ ] 5. Track which threads have pre-drafts
+      Option A: Query Gmail/Outlook for existing drafts
+      Option B: Store draft IDs in database (PreDraft model)
+
+      model PreDraft {
+        id              String   @id @default(cuid())
+        emailAccountId  String
+        threadId        String
+        draftId         String   // Gmail/Outlook draft ID
+        status          String   // created | sent | deleted
+        createdAt       DateTime @default(now())
+
+        @@unique([emailAccountId, threadId])
+      }
+
+[ ] 6. Add user settings for pre-draft feature
+      Settings:
+      - Enable/disable pre-drafts
+      - Max drafts per day (cost control)
+      - Exclude certain senders/categories
+
+[ ] 7. Handle draft lifecycle
+      - Detect when user sends the draft (mark as sent)
+      - Detect when user deletes the draft (mark as deleted)
+      - Don't regenerate deleted drafts
+
+KEY FILES TO MODIFY:
+- apps/web/prisma/schema.prisma (PreDraft model for tracking)
+- apps/web/app/api/pre-drafts/generate/route.ts (new)
+- apps/web/utils/gmail/draft.ts (new)
+- apps/web/utils/outlook/draft.ts (new)
+- apps/web/utils/ai/reply/draft-with-knowledge.ts (may need batching)
+- apps/web/app/(app)/[emailAccountId]/settings/ (new settings)
