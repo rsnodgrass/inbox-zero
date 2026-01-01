@@ -26,11 +26,11 @@
 ### OpenAI
 | Tier | Model | Pricing ($/M tokens) |
 |------|-------|----------------------|
-| **reasoning** | gpt-4o | $2.50 in / $10 out |
-| **fast** | gpt-4o-mini | $0.15 in / $0.60 out |
-| **economy** | gpt-4o-mini | $0.15 in / $0.60 out |
+| **reasoning** | gpt-5 | $2 in / $8 out |
+| **fast** | gpt-5-mini | $0.30 in / $1.20 out |
+| **economy** | gpt-5-mini | $0.30 in / $1.20 out |
 
-**Note:** OpenAI's gpt-4o-mini is ~5x cheaper than Claude Haiku, making it excellent for economy tier.
+**Note:** OpenAI's gpt-5-mini offers strong performance at competitive pricing for economy tier.
 
 ## Tier Selection Guidelines
 
@@ -46,26 +46,31 @@
 - Result is **ephemeral** (not persisted, immediate feedback)
 
 ### Use `economy` when:
-- **High volume** (per-email operations)
 - **Large context** processing (knowledge extraction, bulk analysis)
 - **Background tasks** (async processing, batch jobs)
-- **Structured classification** (binary yes/no, category selection)
+- **Simple classification** (binary yes/no with low consequence)
+- **Bulk summarization** (digest summaries, report data)
 
 ## Quick Decision Tree
 
 ```
-Is it per-email?
-  → economy (volume too high for expensive models)
-
-Is user actively waiting for quick feedback?
-  → fast (latency matters)
+Is it choosing which rule to apply or drafting a reply?
+  → reasoning (accuracy critical - wrong rule = wrong automation)
 
 Is result persisted or user-visible?
   → reasoning (quality matters, cost is negligible)
 
+Is user actively waiting for quick feedback?
+  → fast (latency matters)
+
 Is it background/async with large context?
   → economy (optimized for bulk)
+
+Is it simple classification with low consequence?
+  → economy (errors are recoverable)
 ```
+
+**Note:** Per-email operations vary by consequence. Rule matching and reply drafts need reasoning tier despite volume because errors directly affect user trust.
 
 ## Adding New Operations
 

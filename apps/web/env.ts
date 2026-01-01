@@ -43,21 +43,63 @@ export const env = createEnv({
     CHAT_LLM_PROVIDER: llmProviderEnum.optional(),
     CHAT_LLM_MODEL: z.string().optional(),
     CHAT_OPENROUTER_PROVIDERS: z.string().optional(), // Comma-separated list of OpenRouter providers for chat (e.g., "Google Vertex,Anthropic")
-    // Per-operation LLM overrides as JSON (e.g., {"categorize": "google/gemini-2.5-flash", "draft": "anthropic/claude-sonnet-4"})
+    // Per-operation LLM tier overrides as JSON (e.g., {"rule.match-email":"reasoning","digest.summarize-email":"economy"})
+    // Valid tiers: "reasoning", "fast", "economy"
     LLM_OPERATION_OVERRIDES: z
       .string()
       .optional()
-      .transform((value) => {
-        if (!value) return undefined;
-        try {
-          return JSON.parse(value) as Record<string, string>;
-        } catch (error) {
-          console.warn(
-            `[env] Invalid JSON in LLM_OPERATION_OVERRIDES: ${error instanceof Error ? error.message : "Parse error"}. Overrides will not be applied.`,
-          );
-          return undefined;
-        }
-      }),
+      .transform(
+        (
+          value,
+        ): Record<string, "reasoning" | "fast" | "economy"> | undefined => {
+          if (!value) return undefined;
+
+          // parse JSON
+          let parsed: unknown;
+          try {
+            parsed = JSON.parse(value);
+          } catch (error) {
+            // biome-ignore lint/suspicious/noConsole: logger not initialized during env parsing
+            console.warn(
+              `[env] Invalid JSON in LLM_OPERATION_OVERRIDES: ${error instanceof Error ? error.message : "Parse error"}. Overrides will not be applied.`,
+            );
+            return undefined;
+          }
+
+          // validate shape is Record<string, string>
+          const recordSchema = z.record(z.string(), z.string());
+          const shapeResult = recordSchema.safeParse(parsed);
+          if (!shapeResult.success) {
+            // biome-ignore lint/suspicious/noConsole: logger not initialized during env parsing
+            console.warn(
+              `[env] LLM_OPERATION_OVERRIDES must be a JSON object with string values. Errors: ${shapeResult.error.errors.map((e) => e.message).join(", ")}. Overrides will not be applied.`,
+            );
+            return undefined;
+          }
+
+          // filter to valid tiers only, warn about invalid entries
+          const validTiers = ["reasoning", "fast", "economy"] as const;
+          const result: Record<string, "reasoning" | "fast" | "economy"> = {};
+          const invalidEntries: string[] = [];
+
+          for (const [key, tier] of Object.entries(shapeResult.data)) {
+            if (validTiers.includes(tier as (typeof validTiers)[number])) {
+              result[key] = tier as "reasoning" | "fast" | "economy";
+            } else {
+              invalidEntries.push(`${key}=${tier}`);
+            }
+          }
+
+          if (invalidEntries.length > 0) {
+            // biome-ignore lint/suspicious/noConsole: logger not initialized during env parsing
+            console.warn(
+              `[env] LLM_OPERATION_OVERRIDES contains invalid tiers (valid: reasoning, fast, economy): ${invalidEntries.join(", ")}. These entries will be ignored.`,
+            );
+          }
+
+          return Object.keys(result).length > 0 ? result : undefined;
+        },
+      ),
 
     OPENROUTER_BACKUP_MODEL: z
       .string()
@@ -124,7 +166,6 @@ export const env = createEnv({
       .optional()
       .default("Inbox Zero <updates@transactional.getinboxzero.com>"),
     CRON_SECRET: z.string().optional(),
-    ANTI_ENTROPY_ENABLED: z.coerce.boolean().optional().default(true),
     LOOPS_API_SECRET: z.string().optional(),
     FB_CONVERSION_API_ACCESS_TOKEN: z.string().optional(),
     FB_PIXEL_ID: z.string().optional(),
@@ -206,12 +247,7 @@ export const env = createEnv({
     NEXT_PUBLIC_DIGEST_ENABLED: z.coerce.boolean().optional(),
     NEXT_PUBLIC_MEETING_BRIEFS_ENABLED: z.coerce.boolean().optional(),
     NEXT_PUBLIC_INTEGRATIONS_ENABLED: z.coerce.boolean().optional(),
-    NEXT_PUBLIC_CLEANER_ENABLED: z.coerce.boolean().optional(),
     NEXT_PUBLIC_IS_RESEND_CONFIGURED: z.coerce.boolean().optional(),
-    NEXT_PUBLIC_COMMAND_PALETTE_ENABLED: z.coerce
-      .boolean()
-      .optional()
-      .default(true),
   },
   // For Next.js >= 13.4.4, you only need to destructure client variables:
   experimental__runtimeEnv: {
@@ -273,10 +309,7 @@ export const env = createEnv({
       process.env.NEXT_PUBLIC_MEETING_BRIEFS_ENABLED,
     NEXT_PUBLIC_INTEGRATIONS_ENABLED:
       process.env.NEXT_PUBLIC_INTEGRATIONS_ENABLED,
-    NEXT_PUBLIC_CLEANER_ENABLED: process.env.NEXT_PUBLIC_CLEANER_ENABLED,
     NEXT_PUBLIC_IS_RESEND_CONFIGURED:
       process.env.NEXT_PUBLIC_IS_RESEND_CONFIGURED,
-    NEXT_PUBLIC_COMMAND_PALETTE_ENABLED:
-      process.env.NEXT_PUBLIC_COMMAND_PALETTE_ENABLED,
   },
 });

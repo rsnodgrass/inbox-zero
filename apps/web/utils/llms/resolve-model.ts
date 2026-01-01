@@ -37,15 +37,8 @@ export function resolveModelTier(operationId: LLMOperationId): ModelTier {
 function getEnvOverride(operationId: LLMOperationId): ModelTier | null {
   const overrides = env.LLM_OPERATION_OVERRIDES;
   if (!overrides) return null;
-  const override = overrides[operationId];
-  if (override && isValidTier(override)) {
-    return override;
-  }
-  return null;
-}
-
-function isValidTier(value: string): value is ModelTier {
-  return ["reasoning", "fast", "economy"].includes(value);
+  // env.ts validates that all values are valid ModelTier
+  return overrides[operationId] ?? null;
 }
 
 /**
