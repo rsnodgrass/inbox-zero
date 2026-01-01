@@ -179,6 +179,7 @@ export const env = createEnv({
     WHITELIST_FROM: z.string().optional(),
     USE_BACKUP_MODEL: z.coerce.boolean().optional().default(false),
     HEALTH_API_KEY: z.string().optional(),
+    ANTI_ENTROPY_ENABLED: z.coerce.boolean().optional().default(false),
 
     // license
     LICENSE_1_SEAT_VARIANT_ID: z.coerce.number().optional(),
@@ -247,6 +248,7 @@ export const env = createEnv({
     NEXT_PUBLIC_DIGEST_ENABLED: z.coerce.boolean().optional(),
     NEXT_PUBLIC_MEETING_BRIEFS_ENABLED: z.coerce.boolean().optional(),
     NEXT_PUBLIC_INTEGRATIONS_ENABLED: z.coerce.boolean().optional(),
+    NEXT_PUBLIC_CLEANER_ENABLED: z.coerce.boolean().optional(),
     NEXT_PUBLIC_IS_RESEND_CONFIGURED: z.coerce.boolean().optional(),
   },
   // For Next.js >= 13.4.4, you only need to destructure client variables:
@@ -309,6 +311,7 @@ export const env = createEnv({
       process.env.NEXT_PUBLIC_MEETING_BRIEFS_ENABLED,
     NEXT_PUBLIC_INTEGRATIONS_ENABLED:
       process.env.NEXT_PUBLIC_INTEGRATIONS_ENABLED,
+    NEXT_PUBLIC_CLEANER_ENABLED: process.env.NEXT_PUBLIC_CLEANER_ENABLED,
     NEXT_PUBLIC_IS_RESEND_CONFIGURED:
       process.env.NEXT_PUBLIC_IS_RESEND_CONFIGURED,
   },

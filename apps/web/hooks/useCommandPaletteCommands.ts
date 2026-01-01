@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import type { Command } from "@/lib/commands/types";
 import { useRules } from "@/hooks/useRules";
-import { useUser } from "@/providers/UserProvider";
+import { useUser } from "@/hooks/useUser";
 import { useAccount } from "@/providers/EmailAccountProvider";
 import { prefixPath } from "@/utils/path";
 
@@ -85,7 +85,7 @@ export function useCommandPaletteCommands() {
   const router = useRouter();
   const { emailAccountId } = useAccount();
   const { data: rulesData, isLoading: rulesLoading } = useRules();
-  const { user, isLoading: userLoading } = useUser();
+  const { data: user, isLoading: userLoading } = useUser();
   const navigationItems = useNavigationItems();
 
   const navigationCommands = useMemo<Command[]>(() => {
@@ -158,9 +158,9 @@ export function useCommandPaletteCommands() {
   );
 
   const ruleCommands = useMemo<Command[]>(() => {
-    if (!rulesData?.rules) return [];
+    if (!rulesData) return [];
 
-    return rulesData.rules.map((rule, index) => ({
+    return rulesData.map((rule, index) => ({
       id: `rule-${rule.id}`,
       label: rule.name,
       description: rule.instructions || "View rule",
@@ -171,7 +171,7 @@ export function useCommandPaletteCommands() {
       action: () =>
         router.push(prefixPath(emailAccountId, `/assistant/rule/${rule.id}`)),
     }));
-  }, [rulesData?.rules, router, emailAccountId]);
+  }, [rulesData, router, emailAccountId]);
 
   const accountCommands = useMemo<Command[]>(() => {
     if (!user?.emailAccounts) return [];
