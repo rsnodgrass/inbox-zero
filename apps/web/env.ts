@@ -43,6 +43,21 @@ export const env = createEnv({
     CHAT_LLM_PROVIDER: llmProviderEnum.optional(),
     CHAT_LLM_MODEL: z.string().optional(),
     CHAT_OPENROUTER_PROVIDERS: z.string().optional(), // Comma-separated list of OpenRouter providers for chat (e.g., "Google Vertex,Anthropic")
+    // Per-operation LLM overrides as JSON (e.g., {"categorize": "google/gemini-2.5-flash", "draft": "anthropic/claude-sonnet-4"})
+    LLM_OPERATION_OVERRIDES: z
+      .string()
+      .optional()
+      .transform((value) => {
+        if (!value) return undefined;
+        try {
+          return JSON.parse(value) as Record<string, string>;
+        } catch (error) {
+          console.warn(
+            `[env] Invalid JSON in LLM_OPERATION_OVERRIDES: ${error instanceof Error ? error.message : "Parse error"}. Overrides will not be applied.`,
+          );
+          return undefined;
+        }
+      }),
 
     OPENROUTER_BACKUP_MODEL: z
       .string()
