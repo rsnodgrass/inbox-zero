@@ -67,7 +67,6 @@ export async function findMatchingRules({
       email: getEmailForLLM(message),
       emailAccount,
       provider,
-      modelType,
       coldEmailRule,
     });
 
@@ -391,7 +390,6 @@ async function findMatchingRulesWithReasons(
       email: getEmailForLLM(message),
       rules: potentialAiMatches,
       emailAccount,
-      modelType,
     });
 
     const result = {

@@ -72,7 +72,6 @@ export async function determineConversationStatus({
   const { status, rationale } = await aiDetermineThreadStatus({
     emailAccount,
     threadMessages: threadMessagesForLLM,
-    modelType,
     userSentLastEmail,
   });
 
