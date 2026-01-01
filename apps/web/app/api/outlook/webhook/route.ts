@@ -101,7 +101,7 @@ async function processNotificationsAsync(
     });
 
     await prisma.emailAccount
-      .update({
+      .updateMany({
         where: { watchEmailsSubscriptionId: subscriptionId },
         data: { lastWebhookReceivedAt: new Date() },
       })

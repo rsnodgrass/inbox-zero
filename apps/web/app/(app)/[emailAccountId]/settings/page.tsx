@@ -61,7 +61,9 @@ export default function SettingsPage() {
                 </SectionDescription>
               </FormSection>
 
-              {isGoogleProvider(emailAccount.provider) && <ReplyZeroSection />}
+              {isGoogleProvider(emailAccount.account.provider) && (
+                <ReplyZeroSection />
+              )}
 
               <ResetAnalyticsSection />
               <SyncSection />
