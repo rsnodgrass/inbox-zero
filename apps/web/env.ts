@@ -124,6 +124,7 @@ export const env = createEnv({
       .optional()
       .default("Inbox Zero <updates@transactional.getinboxzero.com>"),
     CRON_SECRET: z.string().optional(),
+    ANTI_ENTROPY_ENABLED: z.coerce.boolean().optional().default(true),
     LOOPS_API_SECRET: z.string().optional(),
     FB_CONVERSION_API_ACCESS_TOKEN: z.string().optional(),
     FB_PIXEL_ID: z.string().optional(),

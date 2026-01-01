@@ -5,6 +5,7 @@ import { processHistoryForUser } from "@/app/api/google/webhook/process-history"
 import type { Logger } from "@/utils/logger";
 import { handleWebhookError } from "@/utils/webhook/error-handler";
 import { getWebhookEmailAccount } from "@/utils/webhook/validate-webhook-account";
+import prisma from "@/utils/prisma";
 
 export const maxDuration = 300;
 
@@ -60,6 +61,15 @@ async function processWebhookAsync(
   logger: Logger,
 ) {
   try {
+    await prisma.emailAccount
+      .update({
+        where: { email: decodedData.emailAddress.toLowerCase() },
+        data: { lastWebhookReceivedAt: new Date() },
+      })
+      .catch((error) => {
+        logger.warn("Failed to update lastWebhookReceivedAt", { error });
+      });
+
     await processHistoryForUser(decodedData, {}, logger);
   } catch (error) {
     // Look up email account to get emailAccountId for error tracking

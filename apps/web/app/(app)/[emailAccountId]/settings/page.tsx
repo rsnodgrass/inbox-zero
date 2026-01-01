@@ -7,6 +7,7 @@ import { ModelSection } from "@/app/(app)/[emailAccountId]/settings/ModelSection
 import { MultiAccountSection } from "@/app/(app)/[emailAccountId]/settings/MultiAccountSection";
 import { ReplyZeroSection } from "@/app/(app)/[emailAccountId]/settings/ReplyZeroSection";
 import { ResetAnalyticsSection } from "@/app/(app)/[emailAccountId]/settings/ResetAnalyticsSection";
+import { SyncSection } from "@/app/(app)/[emailAccountId]/settings/SyncSection";
 import { WebhookSection } from "@/app/(app)/[emailAccountId]/settings/WebhookSection";
 import { isGoogleProvider } from "@/utils/email/provider-types";
 import { FormSection, FormWrapper } from "@/components/Form";
@@ -63,6 +64,7 @@ export default function SettingsPage() {
               {isGoogleProvider(emailAccount.provider) && <ReplyZeroSection />}
 
               <ResetAnalyticsSection />
+              <SyncSection />
 
               {/* this is only used in Gmail when sending a new message. disabling for now. */}
               {/* <SignatureSectionForm signature={user.signature} /> */}
