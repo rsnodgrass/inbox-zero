@@ -38,7 +38,10 @@ const getUserPrompt = ({
   calendarAvailability,
   writingStyle,
   mcpContext,
+
   recipientProfileContext,
+
+  meetingContext,
 }: {
   messages: (EmailForLLM & { to: string })[];
   emailAccount: EmailAccountWithAI;
@@ -49,6 +52,7 @@ const getUserPrompt = ({
   writingStyle: string | null;
   mcpContext: string | null;
   recipientProfileContext: string | null;
+  meetingContext: string | null;
 }) => {
   const userAbout = emailAccount.about
     ? `Context about the user:
@@ -147,6 +151,7 @@ ${mcpContext}
     : "";
 
   const recipientStyleContext = recipientProfileContext || "";
+  const upcomingMeetingsContext = meetingContext || "";
 
   return `${userAbout}
 ${relevantKnowledge}
@@ -157,6 +162,7 @@ ${recipientStyleContext}
 ${calendarContext}
 ${bookingLinkContext}
 ${mcpToolsContext}
+${upcomingMeetingsContext}
 
 Here is the context of the email thread (from oldest to newest):
 ${getEmailListPrompt({ messages, messageMaxLength: 3000 })}
@@ -183,7 +189,10 @@ export async function aiDraftWithKnowledge({
   calendarAvailability,
   writingStyle,
   mcpContext,
+
   recipientProfileContext,
+
+  meetingContext,
 }: {
   messages: (EmailForLLM & { to: string })[];
   emailAccount: EmailAccountWithAI;
@@ -193,7 +202,10 @@ export async function aiDraftWithKnowledge({
   calendarAvailability: CalendarAvailabilityContext | null;
   writingStyle: string | null;
   mcpContext: string | null;
+
   recipientProfileContext: string | null;
+
+  meetingContext: string | null;
 }) {
   try {
     logger.info("Drafting email with knowledge base", {
@@ -218,7 +230,10 @@ export async function aiDraftWithKnowledge({
       calendarAvailability,
       writingStyle,
       mcpContext,
+
       recipientProfileContext,
+
+      meetingContext,
     });
 
     const modelOptions = getModelForOperation(emailAccount.user, "reply.draft");
