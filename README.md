@@ -96,15 +96,8 @@ The fastest way to get started is using [devcontainers](https://containers.dev/)
 
 1. Open the project and select "Reopen in Container" when prompted
 2. Wait for container to build and `postCreateCommand` to complete
-3. Edit `apps/web/.env` and add your OAuth credentials (see [Google OAuth Setup](#google-oauth-setup) or [Microsoft OAuth Setup](#microsoft-oauth-setup))
+3. Configure at least one OAuth provider in `apps/web/.env` (see [Google OAuth Setup](#google-oauth-setup) or [Microsoft OAuth Setup](#microsoft-oauth-setup) below for credentials and redirect URIs)
 4. Run `pnpm dev`
-
-**OAuth redirect URIs (configure at least one provider):**
-- Google:
-  - `http://localhost:3000/api/auth/callback/google`
-  - `http://localhost:3000/api/google/linking/callback`
-  - `http://localhost:3000/api/google/calendar/callback`
-- Microsoft: `http://localhost:3000/api/auth/callback/microsoft`
 
 #### Option B: Manual Setup
 

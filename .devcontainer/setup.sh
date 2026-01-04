@@ -75,7 +75,8 @@ CHAT_LLM_PROVIDER=openai
 CHAT_LLM_MODEL=gpt-4o-mini
 ECONOMY_LLM_PROVIDER=openai
 ECONOMY_LLM_MODEL=gpt-4o-mini
-OPENAI_API_KEY=  # TODO: Add your key from https://platform.openai.com/api-keys
+# TODO: Add your OpenAI key from https://platform.openai.com/api-keys
+OPENAI_API_KEY=
 
 # Dev settings
 NEXT_PUBLIC_BYPASS_PREMIUM_CHECKS=true
