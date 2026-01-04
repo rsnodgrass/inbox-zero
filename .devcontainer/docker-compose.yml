@@ -4,6 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     hostname: inbox-zero-app
+    command: sleep infinity
     volumes:
       - ..:/workspaces/inbox-zero:cached
       # Named volume for node_modules to avoid host/container architecture mismatch
