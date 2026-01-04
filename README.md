@@ -99,7 +99,7 @@ The fastest way to get started is using [devcontainers](https://containers.dev/)
 3. Edit `apps/web/.env` and add your OAuth credentials (see [Google OAuth Setup](#google-oauth-setup) or [Microsoft OAuth Setup](#microsoft-oauth-setup))
 4. Run `pnpm dev`
 
-**Required OAuth redirect URIs:**
+**OAuth redirect URIs (configure at least one provider):**
 - Google:
   - `http://localhost:3000/api/auth/callback/google`
   - `http://localhost:3000/api/google/linking/callback`
