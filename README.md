@@ -100,7 +100,10 @@ The fastest way to get started is using VS Code devcontainers:
 4. Run `pnpm dev`
 
 **Required OAuth redirect URIs:**
-- Google: `http://localhost:3000/api/auth/callback/google`
+- Google:
+  - `http://localhost:3000/api/auth/callback/google`
+  - `http://localhost:3000/api/google/linking/callback`
+  - `http://localhost:3000/api/google/calendar/callback`
 - Microsoft: `http://localhost:3000/api/auth/callback/microsoft`
 
 #### Option B: Manual Setup
