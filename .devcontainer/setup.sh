@@ -5,6 +5,11 @@ set -e
 
 echo "Working directory: $(pwd)"
 
+echo "Setting up directories with proper permissions..."
+sudo mkdir -p /pnpm/store
+sudo chown -R node:node /pnpm
+sudo chown -R node:node /workspaces/inbox-zero/node_modules
+
 echo "Installing GitHub CLI..."
 (type -p wget >/dev/null || (sudo apt update && sudo apt-get install wget -y)) \
   && sudo mkdir -p -m 755 /etc/apt/keyrings \
