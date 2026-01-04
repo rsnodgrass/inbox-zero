@@ -3,6 +3,7 @@
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
   "workspaceFolder": "/workspaces/inbox-zero",
+  "remoteUser": "node",
 
   "customizations": {
     "vscode": {

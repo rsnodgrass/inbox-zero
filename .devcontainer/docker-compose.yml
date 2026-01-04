@@ -1,6 +1,8 @@
 services:
   app:
-    image: mcr.microsoft.com/devcontainers/javascript-node:22
+    build:
+      context: .
+      dockerfile: Dockerfile
     volumes:
       - ..:/workspaces/inbox-zero:cached
       # Named volume for node_modules to avoid host/container architecture mismatch
