@@ -92,9 +92,9 @@ See our **[Self-Hosting Guide](docs/hosting/self-hosting.md)** for complete inst
 
 #### Option A: Devcontainer (Recommended)
 
-The fastest way to get started is using VS Code devcontainers:
+The fastest way to get started is using [devcontainers](https://containers.dev/), supported by VS Code ([Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)), JetBrains IDEs, and other modern editors:
 
-1. Open in VS Code and click "Reopen in Container" when prompted
+1. Open the project and select "Reopen in Container" when prompted
 2. Wait for container to build and `postCreateCommand` to complete
 3. Edit `apps/web/.env` and add your OAuth credentials (see [Google OAuth Setup](#google-oauth-setup) or [Microsoft OAuth Setup](#microsoft-oauth-setup))
 4. Run `pnpm dev`
