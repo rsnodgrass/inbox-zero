@@ -50,10 +50,11 @@ INTERNAL_API_KEY="${INTERNAL_API_KEY_VAL}"
 API_KEY_SALT="${API_KEY_SALT_VAL}"
 CRON_SECRET="${CRON_SECRET_VAL}"
 
-# Google OAuth - TODO: Add your keys from https://console.cloud.google.com/apis/credentials
+# Google OAuth - Replace with your keys from https://console.cloud.google.com/apis/credentials
 # Redirect URI: http://localhost:3000/api/auth/callback/google
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
+# Using placeholder values to allow app to start - OAuth won't work until replaced
+GOOGLE_CLIENT_ID=placeholder-replace-with-real-client-id
+GOOGLE_CLIENT_SECRET=placeholder-replace-with-real-client-secret
 GOOGLE_PUBSUB_TOPIC_NAME="projects/dev/topics/inbox-zero-dev"
 GOOGLE_PUBSUB_VERIFICATION_TOKEN="${PUBSUB_TOKEN_VAL}"
 
