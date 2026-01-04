@@ -90,6 +90,21 @@ See our **[Self-Hosting Guide](docs/hosting/self-hosting.md)** for complete inst
 
 [Here's a video](https://youtu.be/hVQENQ4WT2Y) on how to set up the project. It covers the same steps mentioned in this document. But goes into greater detail on setting up the external services.
 
+#### Option A: Devcontainer (Recommended)
+
+The fastest way to get started is using VS Code devcontainers:
+
+1. Open in VS Code and click "Reopen in Container" when prompted
+2. Wait for container to build and `postCreateCommand` to complete
+3. Edit `apps/web/.env` and add your OAuth credentials (see [Google OAuth Setup](#google-oauth-setup) or [Microsoft OAuth Setup](#microsoft-oauth-setup))
+4. Run `pnpm dev`
+
+**Required OAuth redirect URIs:**
+- Google: `http://localhost:3000/api/auth/callback/google`
+- Microsoft: `http://localhost:3000/api/auth/callback/microsoft`
+
+#### Option B: Manual Setup
+
 #### Requirements
 
 - [Node.js](https://nodejs.org/en/) >= 22.0.0
