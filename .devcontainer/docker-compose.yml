@@ -3,27 +3,19 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    hostname: inbox-zero-app
     volumes:
       - ..:/workspaces/inbox-zero:cached
       # Named volume for node_modules to avoid host/container architecture mismatch
       - node_modules:/workspaces/inbox-zero/node_modules
       - pnpm-store:/pnpm/store
-    command: sleep infinity
     environment:
-      # pnpm store location
       PNPM_HOME: /pnpm
-      # Default LLM config (OpenAI) - override with .env if needed
-      DEFAULT_LLM_PROVIDER: openai
-      DEFAULT_LLM_MODEL: gpt-4o
-      CHAT_LLM_PROVIDER: openai
-      CHAT_LLM_MODEL: gpt-4o-mini
-      ECONOMY_LLM_PROVIDER: openai
-      ECONOMY_LLM_MODEL: gpt-4o-mini
     depends_on:
       db:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
 
   db:
     image: postgres:16
@@ -43,6 +35,11 @@ services:
     image: redis:7
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis-http:
     image: hiett/serverless-redis-http:latest
@@ -51,7 +48,8 @@ services:
       SRH_TOKEN: dev_token
       SRH_CONNECTION_STRING: "redis://redis:6379"
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
 
 volumes:
   postgres-data:
