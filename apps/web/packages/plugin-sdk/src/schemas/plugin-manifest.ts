@@ -24,6 +24,8 @@ export const pluginCapabilitySchema = z.enum([
   "calendar:read",
   "calendar:write",
   "calendar:list",
+  "chat:tool",
+  "chat:context",
 ]);
 
 export type PluginCapability = z.infer<typeof pluginCapabilitySchema>;
