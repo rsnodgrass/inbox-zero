@@ -328,7 +328,7 @@ async function handleError(
       userEmail,
       emailAccountId,
       errorType: ErrorType.AI_QUOTA_ERROR,
-      errorMessage: `Your AI provider (${provider}) has rejected requests due to rate limits or quota. Please check your provider account if this persists.`,
+      errorMessage: `Your AI provider (${provider}) rejected the request: ${error.message}`,
       logger,
     });
   }
