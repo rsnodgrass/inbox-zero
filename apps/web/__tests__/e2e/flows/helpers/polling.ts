@@ -12,6 +12,7 @@ import { logStep } from "./logging";
 import { sleep } from "@/utils/sleep";
 import { extractEmailAddress } from "@/utils/email";
 import { getOrCreateFollowUpLabel } from "@/utils/follow-up/labels";
+import type { ThreadTrackerType } from "@/generated/prisma/enums";
 
 interface PollOptions {
   timeout?: number;
@@ -85,8 +86,11 @@ export async function waitForExecutedRule(options: {
     labelId: string | null;
   }>;
 }> {
-  const { threadId, emailAccountId, timeout = TIMEOUTS.WEBHOOK_PROCESSING } =
-    options;
+  const {
+    threadId,
+    emailAccountId,
+    timeout = TIMEOUTS.WEBHOOK_PROCESSING,
+  } = options;
 
   logStep("Waiting for ExecutedRule", { threadId, emailAccountId });
 
@@ -235,8 +239,12 @@ export async function waitForLabel(options: {
 }
 
 /**
- * Wait for the Follow-up label to be applied to a message
+ * Wait for the Follow-up label to be applied to a specific message
  * Gets the actual label ID from the provider to match against labelIds
+ *
+ * The follow-up process applies the label to the LAST message in a thread:
+ * - For AWAITING: the label is on the user's sent reply
+ * - For NEEDS_REPLY: the label is on the received message (no reply sent)
  */
 export async function waitForFollowUpLabel(options: {
   messageId: string;
@@ -258,7 +266,6 @@ export async function waitForFollowUpLabel(options: {
   await pollUntil(
     async () => {
       const message = await provider.getMessage(messageId);
-      // Check if the message has the Follow-up label by ID
       const hasLabel = message.labelIds?.includes(followUpLabel.id);
       return hasLabel ? true : null;
     },
@@ -270,17 +277,70 @@ export async function waitForFollowUpLabel(options: {
 }
 
 /**
+ * Wait for a sent message to appear in Sent folder
+ *
+ * This is useful when sending via Microsoft Graph's sendMail API which doesn't
+ * return the message ID. We can poll the Sent folder to get the actual ID.
+ */
+export async function waitForSentMessage(options: {
+  provider: EmailProvider;
+  subjectContains: string;
+  timeout?: number;
+  /** Timestamp to filter messages sent after this time */
+  sentAfter?: Date;
+}): Promise<{ messageId: string; threadId: string }> {
+  const {
+    provider,
+    subjectContains,
+    timeout = TIMEOUTS.EMAIL_DELIVERY,
+    sentAfter,
+  } = options;
+
+  logStep("Waiting for message in Sent folder", { subjectContains });
+
+  return pollUntil(
+    async () => {
+      const messages = await provider.getSentMessages(20);
+      const found = messages.find((msg) => {
+        if (!msg.subject?.includes(subjectContains)) return false;
+        // Filter by sent time if specified
+        if (sentAfter && msg.date) {
+          const msgDate = new Date(msg.date);
+          if (msgDate < sentAfter) return false;
+        }
+        return true;
+      });
+
+      if (found?.id && found?.threadId) {
+        return {
+          messageId: found.id,
+          threadId: found.threadId,
+        };
+      }
+      return null;
+    },
+    {
+      timeout,
+      description: `Sent message with subject containing "${subjectContains}"`,
+    },
+  );
+}
+
+/**
  * Wait for a message to appear in inbox (useful after sending)
  */
 export async function waitForMessageInInbox(options: {
   provider: EmailProvider;
   subjectContains: string;
   timeout?: number;
+  /** Optional filter to exclude certain messages (e.g., to find second message in a thread) */
+  filter?: (msg: { id: string; threadId: string }) => boolean;
 }): Promise<{ messageId: string; threadId: string }> {
   const {
     provider,
     subjectContains,
     timeout = TIMEOUTS.EMAIL_DELIVERY,
+    filter,
   } = options;
 
   logStep("Waiting for message in inbox", { subjectContains });
@@ -288,9 +348,14 @@ export async function waitForMessageInInbox(options: {
   return pollUntil(
     async () => {
       const messages = await provider.getInboxMessages(20);
-      const found = messages.find((msg) =>
-        msg.subject?.includes(subjectContains),
-      );
+      const found = messages.find((msg) => {
+        if (!msg.subject?.includes(subjectContains)) return false;
+        // Apply optional filter (e.g., to exclude already-seen messages)
+        if (filter && msg.id && msg.threadId) {
+          return filter({ id: msg.id, threadId: msg.threadId });
+        }
+        return true;
+      });
 
       if (found?.id && found?.threadId) {
         return {
@@ -485,6 +550,116 @@ export async function waitForDraftSendLog(options: {
     {
       timeout,
       description: `DraftSendLog for thread ${threadId}`,
+    },
+  );
+}
+
+/**
+ * Wait for a ThreadTracker to be created for a thread
+ *
+ * ThreadTrackers are created by the AI-powered conversation tracking feature
+ * when it determines a thread needs follow-up (AWAITING or NEEDS_REPLY).
+ */
+export async function waitForThreadTracker(options: {
+  threadId: string;
+  emailAccountId: string;
+  type?: ThreadTrackerType; // Optional: if omitted, wait for any tracker type
+  timeout?: number;
+}): Promise<{
+  id: string;
+  type: ThreadTrackerType;
+  messageId: string;
+  sentAt: Date;
+  resolved: boolean;
+  followUpAppliedAt: Date | null;
+}> {
+  const {
+    threadId,
+    emailAccountId,
+    type,
+    timeout = TIMEOUTS.WEBHOOK_PROCESSING,
+  } = options;
+
+  logStep("Waiting for ThreadTracker", { threadId, emailAccountId, type });
+
+  return pollUntil(
+    async () => {
+      const tracker = await prisma.threadTracker.findFirst({
+        where: {
+          threadId,
+          emailAccountId,
+          resolved: false,
+          ...(type ? { type } : {}),
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      if (!tracker) {
+        logStep("ThreadTracker not found yet", { threadId, type });
+        return null;
+      }
+
+      logStep("ThreadTracker found", {
+        id: tracker.id,
+        type: tracker.type,
+      });
+
+      return {
+        id: tracker.id,
+        type: tracker.type,
+        messageId: tracker.messageId,
+        sentAt: tracker.sentAt,
+        resolved: tracker.resolved,
+        followUpAppliedAt: tracker.followUpAppliedAt,
+      };
+    },
+    {
+      timeout,
+      description: `ThreadTracker${type ? ` (${type})` : ""} for thread ${threadId}`,
+    },
+  );
+}
+
+/**
+ * Wait for a thread to have at least a minimum number of messages
+ *
+ * This is useful when you've sent a message and need to wait for it to
+ * be indexed by the email provider before checking thread contents.
+ * Microsoft Graph can be slow to index sent messages under conversations.
+ */
+export async function waitForThreadMessageCount(options: {
+  threadId: string;
+  provider: EmailProvider;
+  minCount: number;
+  timeout?: number;
+}): Promise<ParsedMessage[]> {
+  const {
+    threadId,
+    provider,
+    minCount,
+    timeout = TIMEOUTS.WEBHOOK_PROCESSING,
+  } = options;
+
+  logStep("Waiting for thread message count", { threadId, minCount });
+
+  return pollUntil(
+    async () => {
+      const messages = await provider.getThreadMessages(threadId);
+      logStep("Thread message count check", {
+        threadId,
+        currentCount: messages.length,
+        requiredCount: minCount,
+      });
+      if (messages.length >= minCount) {
+        return messages;
+      }
+      return null;
+    },
+    {
+      timeout,
+      description: `Thread ${threadId} to have at least ${minCount} messages`,
     },
   );
 }

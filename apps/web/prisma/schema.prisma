@@ -71,6 +71,7 @@ model User {
   lastLogin                DateTime?
   utms                     Json?
   errorMessages            Json? // eg. user set incorrect AI API key
+  announcementDismissedAt  DateTime?
 
   // survey answers (extracted from onboardingAnswers for easier querying)
   surveyFeatures     String[] // multiple choice: features user is interested in
@@ -755,7 +756,8 @@ model ThreadTracker {
   resolved  Boolean           @default(false)
   type      ThreadTrackerType
 
-  followUpAppliedAt DateTime? // When the follow-up label was added (prevents re-processing)
+  followUpAppliedAt DateTime?
+  followUpDraftId   String?
 
   emailAccountId String
   emailAccount   EmailAccount @relation(fields: [emailAccountId], references: [id], onDelete: Cascade)
@@ -1025,7 +1027,7 @@ model DocumentFiling {
   filename     String
 
   // Result (after filing or prediction)
-  folderId   String?  // null if AI suggests creating a new folder
+  folderId   String? // null if AI suggests creating a new folder
   folderPath String
   fileId     String?
   reasoning  String?
