@@ -54,7 +54,7 @@ import {
   getThreadsWithNextPageToken,
 } from "@/utils/gmail/thread";
 import { decodeSnippet } from "@/utils/gmail/decode";
-import { getDraft, deleteDraft } from "@/utils/gmail/draft";
+import { getDraft, deleteDraft, sendDraft } from "@/utils/gmail/draft";
 import { extractErrorInfo, withGmailRetry } from "@/utils/gmail/retry";
 import {
   getFiltersList,
@@ -638,6 +638,12 @@ export class GmailProvider implements EmailProvider {
     await deleteDraft(this.client, draftId);
   }
 
+  async sendDraft(
+    draftId: string,
+  ): Promise<{ messageId: string; threadId: string }> {
+    return sendDraft(this.client, draftId);
+  }
+
   async createDraft(params: {
     to: string;
     subject: string;
@@ -1099,6 +1105,32 @@ export class GmailProvider implements EmailProvider {
           ) || [],
         snippet: decodeSnippet(thread.snippet),
       }));
+  }
+
+  async getThreadsWithLabel(options: {
+    labelId: string;
+    maxResults?: number;
+  }): Promise<EmailThread[]> {
+    const { threads } = await this.getThreadsWithQuery({
+      query: { labelId: options.labelId },
+      maxResults: options.maxResults,
+    });
+    return threads;
+  }
+
+  async getLatestMessageInThread(
+    threadId: string,
+  ): Promise<ParsedMessage | null> {
+    const thread = await this.getThread(threadId);
+    if (!thread.messages.length) return null;
+
+    const sorted = [...thread.messages].sort((a, b) => {
+      const aDate = Number(a.internalDate) || 0;
+      const bDate = Number(b.internalDate) || 0;
+      return bDate - aDate;
+    });
+
+    return sorted[0];
   }
 
   async getDrafts(options?: { maxResults?: number }): Promise<ParsedMessage[]> {

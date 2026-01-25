@@ -90,6 +90,9 @@ export function Footer({ className, variant = "default" }: FooterProps) {
           </div>
           <div>
             <FooterList title="Support" items={footerNavigation.support} />
+            <div className="mt-6">
+              <FooterList title="Free Tools" items={footerNavigation.tools} />
+            </div>
           </div>
           <div>
             <FooterList title="Company" items={footerNavigation.company} />

@@ -153,6 +153,7 @@ export interface EmailProvider {
   markReadThread(threadId: string, read: boolean): Promise<void>;
   getDraft(draftId: string): Promise<ParsedMessage | null>;
   deleteDraft(draftId: string): Promise<void>;
+  sendDraft(draftId: string): Promise<{ messageId: string; threadId: string }>;
   createDraft(params: {
     to: string;
     subject: string;
@@ -216,6 +217,11 @@ export interface EmailProvider {
     participantEmail: string;
     maxThreads?: number;
   }): Promise<EmailThread[]>;
+  getThreadsWithLabel(options: {
+    labelId: string;
+    maxResults?: number;
+  }): Promise<EmailThread[]>;
+  getLatestMessageInThread(threadId: string): Promise<ParsedMessage | null>;
   getMessagesBatch(messageIds: string[]): Promise<ParsedMessage[]>;
   getAccessToken(): string;
   checkIfReplySent(senderEmail: string): Promise<boolean>;

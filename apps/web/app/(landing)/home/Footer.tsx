@@ -34,6 +34,13 @@ export const footerNavigation = {
       href: "/best-perplexity-email-assistant-alternative",
     },
   ],
+  tools: [
+    { name: "Email Deliverability Checker", href: "/tools/email-deliverability-checker" },
+    { name: "Gmail Personality Quiz", href: "/tools/gmail-quiz" },
+    { name: "Subject Line Analyzer", href: "/tools/subject-line-analyzer" },
+    { name: "Email Signature Generator", href: "/tools/email-signature-generator" },
+    { name: "Meeting Cost Calculator", href: "/tools/meeting-cost-calculator" },
+  ],
   support: [
     { name: "Pricing", href: "/#pricing" },
     { name: "Contact", href: "mailto:elie@getinboxzero.com", target: "_blank" },
@@ -188,6 +195,10 @@ export function Footer() {
           </div>
           <div>
             <FooterList title="Support" items={footerNavigation.support} />
+
+            <div className="mt-6">
+              <FooterList title="Free Tools" items={footerNavigation.tools} />
+            </div>
           </div>
           <div>
             <FooterList title="Company" items={footerNavigation.company} />
